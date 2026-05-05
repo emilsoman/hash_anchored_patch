@@ -38,10 +38,12 @@ defmodule HashAnchoredPatch.EditTool do
   def edit(file_path, instruction, opts \\ []) do
     context_lines = Keyword.get(opts, :context_lines, 5)
 
-    with {:ok, anchors} <- HashAnchoredPatch.compute_anchors(file_path, context_lines),
+    with {:ok, content} <- File.read(file_path),
+         lines = String.split(content, "\n"),
+         anchors = HashAnchoredPatch.build_anchor_map(content, context_lines),
          short_len = min_unique_prefix_len(anchors, 3),
          lookup = build_prefix_lookup(anchors, short_len),
-         short_anchors = shorten(anchors, short_len),
+         short_anchors = shorten(anchors, lines, short_len),
          {:ok, plan} <- run_baml(instruction, short_anchors),
          {:ok, patches} <- expand_patches(plan.patches, lookup),
          {:ok, summary} <-
@@ -67,11 +69,17 @@ defmodule HashAnchoredPatch.EditTool do
   defp build_prefix_lookup(anchors, n),
     do: Map.new(anchors, &{String.slice(&1.anchor_hash, 0, n), &1.anchor_hash})
 
-  defp shorten(anchors, n),
-    do:
-      Enum.map(anchors, fn a ->
-        %{line: a.line, anchor_hash: String.slice(a.anchor_hash, 0, n), preview: a.preview}
-      end)
+  # Replace the engine's 80-char preview with the full line text — the
+  # LLM needs to see the whole line to write a correct search/replace.
+  defp shorten(anchors, lines, n) do
+    Enum.map(anchors, fn a ->
+      %{
+        line: a.line,
+        anchor_hash: String.slice(a.anchor_hash, 0, n),
+        preview: Enum.at(lines, a.line, "")
+      }
+    end)
+  end
 
   defp expand_patches(patches, lookup) do
     Enum.reduce_while(patches, {:ok, []}, fn p, {:ok, acc} ->
