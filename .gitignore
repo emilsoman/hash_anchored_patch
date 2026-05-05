@@ -24,3 +24,6 @@ hash_anchored_patch-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Local env (often holds OPENAI_API_KEY for the demo).
+.envrc

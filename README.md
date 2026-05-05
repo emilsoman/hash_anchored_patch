@@ -41,28 +41,53 @@ fails loudly instead of corrupting the file.
 
 ## Installation
 
-Standalone — clone and run the tests:
+### Use it from another project (recommended)
+
+Add it as a git dependency in your `mix.exs`:
+
+```elixir
+def deps do
+  [
+    {:hash_anchored_patch, github: "emilsoman/hash_anchored_patch"}
+  ]
+end
+```
+
+Then `mix deps.get` and `mix compile`. That's it — both the engine
+(`HashAnchoredPatch`) and the LLM editor (`HashAnchoredPatch.EditTool`)
+are immediately available. The BAML prompt files in `priv/baml_src/`
+ship with the dep and are resolved at runtime via
+`:code.priv_dir(:hash_anchored_patch)`.
+
+You can also pin a tag, branch, or commit:
+
+```elixir
+{:hash_anchored_patch, github: "emilsoman/hash_anchored_patch", tag: "v0.1.0"}
+{:hash_anchored_patch, github: "emilsoman/hash_anchored_patch", branch: "main"}
+```
+
+Or use a local path while developing:
+
+```elixir
+{:hash_anchored_patch, path: "../hash_anchored_patch"}
+```
+
+### Environment
+
+The deterministic engine has zero runtime requirements.
+
+The LLM editor (`HashAnchoredPatch.EditTool`) needs `OPENAI_API_KEY`
+exported in the environment of whatever process calls it — that's all.
+
+### Hacking on this repo directly
 
 ```bash
 git clone https://github.com/emilsoman/hash_anchored_patch.git
 cd hash_anchored_patch
 mix deps.get
 mix test
+mix run examples/demo.exs   # needs OPENAI_API_KEY
 ```
-
-As a path dependency from another Elixir project:
-
-```elixir
-def deps do
-  [
-    {:hash_anchored_patch, path: "../hash_anchored_patch"}
-  ]
-end
-```
-
-The LLM editor (`HashAnchoredPatch.EditTool`) needs `OPENAI_API_KEY` in
-the environment. The included `.envrc` is a placeholder — replace it
-with your own key (or `direnv allow` after editing).
 
 ---
 
